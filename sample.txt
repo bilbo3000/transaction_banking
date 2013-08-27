@@ -1,0 +1,169 @@
+The Sample file
+Contains tests cases to test the correctness of the program. 
+
+Dongpu Jin
+4/20/2012
+
+Test Cases:
+
+0. Start server at a terminal: 
+$ java Bank
+> No port provided. Using default port: 1099
+> Server ready
+-----
+
+1. C1 starts transation:  
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 inquiry 1 100 
+> WARNING: The transaction for customer 1 has not been started.
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 begin_transaction 1 
+> Customer 1 starts the transaction.
+
+* Note that C1 cannot perform operations unless it begin transaction. 
+-----
+
+2. C1 inqiury account 300, which does not exist: 
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 inquiry 1 300
+> WARNING: The account 300 does not exist.
+
+* Access to non-exist account is not allowed. 
+-----
+
+3. C1 inquiry account 100: 
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 inquiry 1 100
+> The current balance for account 100 is $1000
+
+* Normal inquiry. 
+-----
+
+4. C1 withdraw $50 from account 100: 
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 withdraw 1 100 50
+> Successfully withdraw $50 from account 100
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 inquiry 1 100 
+> The current balance for account 100 is $950
+
+* Before commit, it is showing the balance in private workspace. 
+-----
+
+5. C1 withdraw $5000 from account 100: 
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 withdraw 1 100 5000
+> Balance not enough. Action canceled.
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 inquiry 1 100 
+> The current balance for account 100 is $950
+
+* Note that the withdraw amount exceeds the balance. The action is cancelled and 
+the balance remains unchange. 
+-----
+
+6. C1 deposit $100 to account 100: 
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 deposit 1 100 100 
+> Successfully deposit $100 to account 100
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 inquiry 1 100 
+> The current balance for account 100 is $1050
+
+* Normal deposit. Showing the value in private workspace. 
+-----
+
+7. C1 abort the transaction: 
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 abort_transaction 1 
+> Customer 1 aborts the transaction.
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 begin_transaction 1 
+> Customer 1 starts the transaction.
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 inquiry 1 100 
+> The current balance for account 100 is $1000
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 abort_transaction 1 
+> Customer 1 aborts the transaction.
+
+* Note that all the actions in the the previous transaction are discarded after abort. 
+The balance remains unchange. 
+-----
+
+8. C1 deposits to non-exist account (300): 
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 begin_transaction 1 
+> Customer 1 starts the transaction. 
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 deposit 1 300 100 
+> Successfully deposit $100 to account 300
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 inquiry 1 300 
+> The current balance for account 300 is $100
+
+* Note that if client tries to deposit to non-exist account, the account is automatically 
+created and money is deposited into that account. 
+-----
+
+9. C1 commits the previous transaction: 
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 end_transaction 1
+> Customer 1 commits the transaction.
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 begin_transaction 1 
+> Customer 1 starts the transaction.
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 inquiry 1 300 
+> The current balance for account 300 is $100
+
+* All the actions are actually committed at this time.  
+-----
+
+10. C1 tries to access a different account within the current transaction: 
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 inquiry 1 200
+> WARNING: Inquiry a different account 200 is not allowed in this transaction. 
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 end_transaction 1
+> Customer 1 commits the transaction. 
+
+* Each client is allowed to access only one account within one transaction. Attempt
+to access a different account results error message. 
+-----
+
+11. Demonstrate FIFO blocking. 
+
+- Launch three clients via different ATMs (terminals): 
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 begin_transaction 1 
+> Customer 1 starts the transaction.
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 begin_transaction 2
+> Customer 2 starts the transaction.
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 begin_transaction 3
+> Customer 3 starts the transaction. 
+
+- All clients tries to withdraw $500 from account 100, which has balance $1000: 
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 withdraw 1 100 500 
+> Successfully withdraw $500 from account 100
+ 
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 withdraw 2 100 500
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 withdraw 3 100 500
+
+* Note that C1 is accessing account 100. C2 and C3 are blocked to wait C1 
+to commit. 
+
+- C1 commits: 
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 end_transaction 1 
+> Customer 1 commits the transaction.
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 withdraw 2 100 500
+> Successfully withdraw $500 from account 100
+
+* Note that after C1 commits, C2 is the next client in line and is able to 
+withdraw money from account 100. C3 is still blocking to wait C2 to commit. 
+
+- C2 commits: 
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 end_transaction 2
+> Customer 2 commits the transaction.
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 withdraw 3 100 500
+> Balance not enough. Action canceled.
+
+$ java ATM ec2-107-20-53-145.compute-1.amazonaws.com 1099 end_transaction 3
+> Customer 3 commits the transaction.
+
+* After C2 commits, it is C3's turn to access account 100. However, at that 
+moment, there is no money left in that account. C3's action got canceled.  

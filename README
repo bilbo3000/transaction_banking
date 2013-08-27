@@ -1,0 +1,34 @@
+Dongpu Jin
+4/20/2013
+
+Submitted Files: 
+- ATM.java: The ATM client. Send user requests to the server via RPC. 
+- Bank.java: The Bank server. Process requests sent by the client. 
+- BankInterface.java: The interface of account management methods. 
+- Makefile: invokded by typing make. Compile the program. 
+- Design.docx: the design document. 
+- sample.txt: test cases. 
+
+Unzip: 
+$ unzip 855-pa3.zip
+$ cd pa3
+
+Compiling environment: Amazon Linux AMI 2012.09.1 instances
+
+Security group setting: All TCP
+
+Environment setup: 
+$ sudo yum install java-devel
+$ sudo yum install make
+
+Clean up: 
+$ make clean
+
+Compile: 
+$ make
+
+Launch server: 
+$ java Bank 6666
+
+Launch client: 
+$ java ATM your_hostname 6666 begin_transaction 1
